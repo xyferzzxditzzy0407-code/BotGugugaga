@@ -135,6 +135,7 @@
         const received = escapeHtml(row.receivedAt || "-");
         const client = escapeHtml(row.clientName || "-");
         const sender = escapeHtml(row.sourceAddress || "-");
+        const messageBody = escapeHtml(row.messageBody || "-");
         const range = escapeHtml(row.rangeName || "-");
         const number = escapeHtml(row.destinationNumber || "-");
         const status = escapeHtml(row.status || "-");
@@ -150,6 +151,11 @@
             <div class="row">
               <span class="label">Sender:</span>
               ${sender}
+            </div>
+
+            <div class="row">
+              <span class="label">messageBody:</span>
+              ${messageBody}
             </div>
 
             <div class="row">
@@ -190,6 +196,16 @@
       console.error(error);
     }
   }
+
+  function getSenderCode(sender) {
+  return String(sender || "").split(":")[0].trim();
+}
+
+function copySender(sender) {
+  const code = getSenderCode(sender);
+
+  navigator.clipboard.writeText(code);
+}
 
   function escapeHtml(value) {
     return String(value)
