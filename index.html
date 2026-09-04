@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Traffic Dashboard</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #111827;
+      color: white;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    h1 {
+      margin-bottom: 5px;
+    }
+
+    .status {
+      color: #9ca3af;
+      margin-bottom: 20px;
+    }
+
+    button {
+      border: 0;
+      padding: 13px 20px;
+      border-radius: 8px;
+      background: #2563eb;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    button:active {
+      transform: scale(.98);
+    }
+
+    .card {
+      background: #1f2937;
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 12px;
+      border: 1px solid #374151;
+    }
+
+    .row {
+      margin: 6px 0;
+      word-break: break-word;
+    }
+
+    .label {
+      color: #9ca3af;
+    }
+
+    .empty {
+      color: #9ca3af;
+      text-align: center;
+      padding: 30px;
+    }
+
+    .success {
+      color: #4ade80;
+    }
+
+    .error {
+      color: #f87171;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>Traffic Dashboard</h1>
+
+  <div class="status">
+    Live monitoring: <span id="live">CONNECTING...</span>
+  </div>
+
+  <button id="testBot">
+    [ TEST BOT ]
+  </button>
+
+  <div id="result"></div>
+
+</div>
+
+<script>
+  const result = document.getElementById("result");
+  const live = document.getElementById("live");
+  const testBot = document.getElementById("testBot");
+
+  let lastIds = new Set();
+
+  async function loadTraffic() {
+    try {
+      const response = await fetch("/api/traffic", {
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        throw new Error("HTTP " + response.status);
+      }
+
+      const data = await response.json();
+
+      live.textContent = "ONLINE";
+      live.className = "success";
+
+      const rows = data.rows || [];
+
+      if (!rows.length) {
+        result.innerHTML =
+          '<div class="empty">Belum ada traffic.</div>';
+        return;
+      }
+
+      result.innerHTML = rows.map(row => {
+
+        const id = escapeHtml(row.id || "-");
+        const received = escapeHtml(row.receivedAt || "-");
+        const client = escapeHtml(row.clientName || "-");
+        const sender = escapeHtml(row.sourceAddress || "-");
+        const range = escapeHtml(row.rangeName || "-");
+        const number = escapeHtml(row.destinationNumber || "-");
+        const status = escapeHtml(row.status || "-");
+
+        return `
+          <div class="card">
+
+            <div class="row">
+              <span class="label">ID:</span>
+              ${id}
+            </div>
+
+            <div class="row">
+              <span class="label">Sender:</span>
+              ${sender}
+            </div>
+
+            <div class="row">
+              <span class="label">Client:</span>
+              ${client}
+            </div>
+
+            <div class="row">
+              <span class="label">Range:</span>
+              ${range}
+            </div>
+
+            <div class="row">
+              <span class="label">Number:</span>
+              ${number}
+            </div>
+
+            <div class="row">
+              <span class="label">Status:</span>
+              ${status}
+            </div>
+
+            <div class="row">
+              <span class="label">Received:</span>
+              ${received}
+            </div>
+
+          </div>
+        `;
+      }).join("");
+
+      lastIds = new Set(rows.map(x => x.id));
+
+    } catch (error) {
+      live.textContent = "ERROR";
+      live.className = "error";
+
+      console.error(error);
+    }
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  testBot.addEventListener("click", async () => {
+
+    testBot.disabled = true;
+    testBot.textContent = "SENDING...";
+
+    try {
+      const response = await fetch("/api/test-bot", {
+        method: "POST"
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Gagal");
+      }
+
+      alert("✅ Test message berhasil dikirim ke Telegram!");
+
+    } catch (error) {
+      alert("❌ " + error.message);
+
+    } finally {
+      testBot.disabled = false;
+      testBot.textContent = "[ TEST BOT ]";
+    }
+  });
+
+  // Load pertama
+  loadTraffic();
+
+  // LIVE: cek setiap 3 detik tanpa refresh halaman
+  setInterval(loadTraffic, 3000);
+</script>
+
+</body>
+  </html>
