@@ -31,6 +31,7 @@ export default async function handler(req, res) {
       rangeName: row.rangeName,
       rangeTemplate: row.rangeTemplate,
       destinationNumber: row.destinationNumber,
+      messageBody : row.messageBody,
       rate: row.rate,
       status: row.status
     }));
